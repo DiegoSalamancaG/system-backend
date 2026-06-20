@@ -8,6 +8,7 @@ import {
 import { rootRouter } from "./infrastructure/http/routes/index";
 import { errorMiddleware } from "./infrastructure/http/middlewares/errorMiddlewares";
 import { logger } from "./infrastructure/shared/logger";
+import { connectDB } from "./context/prisma";
 
 dotenv.config();
 
@@ -30,6 +31,7 @@ app.use("/api/v1", rootRouter);
 // Errores middleware
 app.use(errorMiddleware);
 
-app.listen(PORT, () => {
+app.listen(PORT, async () => {
+  await connectDB();
   console.log(`Servidor corriendo en http://localhost:${PORT}`);
 });
