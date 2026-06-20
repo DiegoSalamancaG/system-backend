@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from "express";
-import { RegisterUserUseCase } from "../../../core/users/application/registerUserUseCase";
+import { RegisterUserUseCase } from "../../../core/auth/application/registerUserUseCase";
 import { LoginUseCase } from "../../../core/auth/application/loginUseCase";
 import { UserMapper } from "../../database/mappers/userMapper";
 import { HttpResponse } from "../../shared/utils/httpResponse";
+import { logger } from "../../shared/logger";
 
 export class AuthController {
   constructor(
@@ -25,9 +26,11 @@ export class AuthController {
         role,
         status: "ACTIVE",
       });
+      logger.info(
+        `[USER] Nuevo usuario registrado exitosamente: ${newUser.email} con ID: ${newUser.id}`,
+      );
 
       const safeUser = UserMapper.toDomainResponse(newUser);
-
       res
         .status(201)
         .json(
@@ -46,13 +49,17 @@ export class AuthController {
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
+    const { email, password } = req.body;
     try {
-      const { email, password } = req.body;
       const result = await this.loginUseCase.execute(email, password);
+      logger.info(`[AUTH] Login exitoso para el usuario: ${email}`);
 
       res.status(200).json(HttpResponse.success(result, "Login exitoso"));
     } catch (error) {
       next(error);
+      logger.warn(
+        `[AUTH] Intento de login fallido para el usuario: ${email} - Motivo: Credenciales inválidas`,
+      );
     }
   };
 }

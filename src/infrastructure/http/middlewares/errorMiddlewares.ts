@@ -1,6 +1,7 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
 import { CustomError } from "../../../core/shared/Errors/customError";
 import { AuthenticatedRequest } from "../interfaces/authenticatedRequestInterface";
+import { logger } from "../../shared/logger";
 
 export const errorMiddleware = (
   error: Error,
@@ -8,6 +9,7 @@ export const errorMiddleware = (
   res: Response,
   next: NextFunction,
 ): void => {
+  logger.error(error);
   // Si es un error controlado por nuestro dominio
   if (error instanceof CustomError) {
     res.status(error.statusCode).json({

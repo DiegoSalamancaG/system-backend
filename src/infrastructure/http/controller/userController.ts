@@ -1,4 +1,5 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
+import { AuthenticatedRequest } from "../interfaces/authenticatedRequestInterface";
 
 // Casos de uso
 import { CreateUserUseCase } from "../../../core/users/application/createUserUseCase";
@@ -9,6 +10,7 @@ import { UpdateUserUseCase } from "../../../core/users/application/updateUserUse
 
 import { UserMapper } from "../../database/mappers/userMapper";
 import { HttpResponse } from "../../shared/utils/httpResponse";
+import { logger } from "../../shared/logger";
 
 export class UserController {
   constructor(
@@ -19,7 +21,11 @@ export class UserController {
     private readonly updateUserUseCase: UpdateUserUseCase,
   ) {}
 
-  createUser = async (req: Request, res: Response, next: NextFunction) => {
+  createUser = async (
+    req: AuthenticatedRequest,
+    res: Response,
+    next: NextFunction,
+  ): Promise<void> => {
     try {
       const { fullname, email, password, role } = req.body;
       const newUser = await this.createUserUseCase.execute({
@@ -31,6 +37,9 @@ export class UserController {
       });
 
       const safeUser = UserMapper.toDomainResponse(newUser as any);
+      logger.info(
+        `[USER] Nuevo usuario creado exitosamente: ${newUser.email} con ID: ${newUser.id}`,
+      );
       res
         .status(201)
         .json(HttpResponse.success(safeUser, "Usuario registrado con éxito"));
@@ -40,7 +49,7 @@ export class UserController {
   };
 
   getUserById = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -57,7 +66,7 @@ export class UserController {
   };
 
   getAllUsers = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -82,7 +91,7 @@ export class UserController {
   };
 
   updateUser = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -90,7 +99,9 @@ export class UserController {
       const id = req.params.id as string;
       const userData = req.body;
       const updatedUser = await this.updateUserUseCase.execute(id, userData);
-
+      logger.info(
+        `[USER] Usuario actualizado ${updatedUser?.email}. Acción realizada por Admin ID: ${req.user!.id}`,
+      );
       const safeUser = UserMapper.toDomainResponse(updatedUser as any);
       res
         .status(200)
@@ -101,13 +112,16 @@ export class UserController {
   };
 
   deactivateUser = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
     try {
       const id = req.params.id as string;
       await this.deactivateUserUseCase.execute(id);
+      logger.info(
+        `[USER] Usuario "${id}" desactivado  Acción realizada por Admin ID: ${req.user!.id}`,
+      );
       res
         .status(200)
         .json(HttpResponse.success(null, "Usuario desactivado con éxito"));

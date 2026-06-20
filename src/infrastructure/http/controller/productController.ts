@@ -1,6 +1,10 @@
-import { Request, Response, NextFunction } from "express";
+import { Response, NextFunction } from "express";
+import { AuthenticatedRequest } from "../interfaces/authenticatedRequestInterface";
+
 import { HttpResponse } from "../../shared/utils/httpResponse";
 import { ProductMapper } from "../../database/mappers/productMapper";
+import { logger } from "../../shared/logger";
+
 // Casos de uso
 import { CreateProductUseCase } from "../../../core/products/application/createProductUsecase";
 import { GetAllProductsUseCase } from "../../../core/products/application/getAllProductsUseCase";
@@ -19,7 +23,7 @@ export class ProductController {
   ) {}
 
   createProduct = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -34,6 +38,9 @@ export class ProductController {
         imageUrl,
         isActive: true,
       });
+      logger.info(
+        `[PRODUCT] Nuevo producto creado exitosamente: ${product.name} con ID: ${product.id}`,
+      );
       const safeProduct = ProductMapper.toDomainResponse(product as any);
       res
         .status(201)
@@ -44,7 +51,7 @@ export class ProductController {
   };
 
   getProductById = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -60,7 +67,7 @@ export class ProductController {
   };
 
   getAllProducts = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -84,7 +91,7 @@ export class ProductController {
   };
 
   updateProduct = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -93,6 +100,9 @@ export class ProductController {
       const updatedProduct = await this.updateProductUseCase.execute(
         id,
         req.body,
+      );
+      logger.info(
+        `[PRODUCT] Producto Modificado: ${updatedProduct?.name} con ID: ${updatedProduct?.id}`,
       );
       const safeUpdate = ProductMapper.toDomainResponse(updatedProduct as any);
       res
@@ -106,13 +116,16 @@ export class ProductController {
   };
 
   deactivateProduct = async (
-    req: Request,
+    req: AuthenticatedRequest,
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
     try {
       const id = req.params.id as string;
       await this.deactivateProductUseCase.execute(id);
+      logger.info(
+        `[PRODUCT] Producto "${id}" desactivado  Acción realizada por Admin ID: ${req.user!.id}`,
+      );
       res
         .status(200)
         .json(HttpResponse.success(null, "Producto eliminado con éxito"));
