@@ -4,10 +4,15 @@ export interface Product {
   description: string;
   price: number;
   stock: number;
-  imageUrl: string;
+  images: ProductImageDomain[];
   isActive: boolean;
   createdAt?: Date;
   updatedAt?: Date;
   createdBy?: string | null;
   updatedBy?: string | null;
+}
+
+export interface ProductImageDomain {
+  url: string;
+  isMain: boolean;
 }

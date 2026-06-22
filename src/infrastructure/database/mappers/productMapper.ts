@@ -1,17 +1,28 @@
-import { Product as PrismaProductModel } from "@prisma/client";
+import {
+  Product as PrismaProductModel,
+  GalleryImage as GalleryImagePrisma,
+} from "@prisma/client";
 import { Product } from "../../../core/products/domain/product";
+
+// Definir tipo de prisma
+type ProductWithImages = PrismaProductModel & {
+  images: GalleryImagePrisma[];
+};
 
 export class ProductMapper {
   // Transforma el modelo de la base de datos al objeto del dominio
-  static toDomain(prismaProduct: PrismaProductModel): Product {
+  static toDomain(prismaProduct: ProductWithImages): Product {
     return {
       id: prismaProduct.id,
       name: prismaProduct.name,
       description: prismaProduct.description,
       price: prismaProduct.price,
       stock: prismaProduct.stock,
-      imageUrl: prismaProduct.imageUrl,
       isActive: prismaProduct.isActive,
+      images: (prismaProduct.images || []).map((img) => ({
+        url: img.url,
+        isMain: img.isMain,
+      })),
       createdAt: prismaProduct.createdAt,
       updatedAt: prismaProduct.updatedAt,
       createdBy: prismaProduct.createdBy,
@@ -20,10 +31,10 @@ export class ProductMapper {
   }
 
   static toDomainResponse(
-    prismaProduct: PrismaProductModel,
+    prismaProduct: ProductWithImages,
   ): Pick<
     Product,
-    "id" | "name" | "description" | "price" | "stock" | "imageUrl" | "isActive"
+    "id" | "name" | "description" | "price" | "stock" | "isActive" | "images"
   > {
     return {
       id: prismaProduct.id,
@@ -31,8 +42,8 @@ export class ProductMapper {
       description: prismaProduct.description,
       price: prismaProduct.price,
       stock: prismaProduct.stock,
-      imageUrl: prismaProduct.imageUrl,
       isActive: prismaProduct.isActive,
+      images: prismaProduct.images,
     };
   }
 }

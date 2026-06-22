@@ -1,5 +1,8 @@
 import { Response, NextFunction } from "express";
-import { AuthenticatedRequest } from "../interfaces/authenticatedRequestInterface";
+import {
+  AuthenticatedRequest,
+  MulterFileInMemory,
+} from "../interfaces/authenticatedRequestInterface";
 
 import { HttpResponse } from "../../shared/utils/httpResponse";
 import { ProductMapper } from "../../database/mappers/productMapper";
@@ -12,6 +15,9 @@ import { GetProductByIdUseCase } from "../../../core/products/application/getPro
 import { UpdateProductUseCase } from "../../../core/products/application/udpateProductUseCase";
 import { DeactivateProductUseCase } from "../../../core/products/application/deactivateProductUseCase";
 
+// Servicio para subir imgs
+import { ImageUploadService } from "../../shared/imageUploadService";
+
 export class ProductController {
   // Inyección de dependecias
   constructor(
@@ -20,6 +26,7 @@ export class ProductController {
     private readonly getProductByIdUseCase: GetProductByIdUseCase,
     private readonly updateProductUseCase: UpdateProductUseCase,
     private readonly deactivateProductUseCase: DeactivateProductUseCase,
+    private readonly imageUploadService: ImageUploadService,
   ) {}
 
   createProduct = async (
@@ -28,20 +35,46 @@ export class ProductController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { name, description, price, stock, imageUrl } = req.body;
+      const validatedBody = req.body;
 
-      const product = await this.createProductUseCase.execute({
-        name,
-        description,
-        price,
-        stock,
-        imageUrl,
-        isActive: true,
+      // Extraemos los archivos de Multer
+      const files = req.files as MulterFileInMemory[];
+      if (!files || files.length === 0) {
+        res
+          .status(400)
+          .json(
+            HttpResponse.error(
+              "Debes subir al menos una imagen para el producto.",
+            ),
+          );
+        return;
+      }
+
+      // Subida en paralelo a Cloudinary
+      const uploadPromises = files.map((file) =>
+        this.imageUploadService.uploadImage(file.buffer, "productos"),
+      );
+      const imageUrls = await Promise.all(uploadPromises);
+
+      // Formateamos el array para el Dominio
+      const imagesData = imageUrls.map((url, index) => ({
+        url,
+        isMain: index === 0,
+      }));
+
+      // 5. Llamamos al Caso de Uso
+      const newProduct = await this.createProductUseCase.execute({
+        name: validatedBody.name,
+        description: validatedBody.description,
+        price: Number(validatedBody.price),
+        stock: Number(validatedBody.stock),
+        images: imagesData,
+        createdBy: req.user!.id,
       });
       logger.info(
-        `[PRODUCT] Nuevo producto creado exitosamente: ${product.name} con ID: ${product.id}`,
+        `[PRODUCT] Nuevo producto creado exitosamente: ${newProduct.name} con ID: ${newProduct.id}`,
       );
-      const safeProduct = ProductMapper.toDomainResponse(product as any);
+      const safeProduct = ProductMapper.toDomainResponse(newProduct as any);
       res
         .status(201)
         .json(HttpResponse.success(safeProduct, "Producto creado con éxito"));

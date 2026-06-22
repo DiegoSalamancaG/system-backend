@@ -15,18 +15,29 @@ export class PrismaProductRepository implements ProductRepository {
         description: productData.description,
         price: productData.price,
         stock: productData.stock,
-        imageUrl: productData.imageUrl,
         isActive: productData.isActive,
         createdBy: productData.createdBy,
+        images: {
+          create: productData.images?.map((img) => ({
+            url: img.url,
+            isMain: img.isMain,
+            category: "PRODUCT",
+            createdBy: productData.createdBy,
+          })),
+        },
+      },
+      include: {
+        images: true,
       },
     });
-    return createdProduct;
+    return ProductMapper.toDomainResponse(createdProduct);
   }
 
   // Metodo para buscar por ID
   async findById(id: string): Promise<Product | null> {
     const product = await prisma.product.findUnique({
       where: { id },
+      include: { images: true },
     });
     if (!product) return null;
     return ProductMapper.toDomainResponse(product);
@@ -36,6 +47,7 @@ export class PrismaProductRepository implements ProductRepository {
   async findByName(name: string): Promise<Product | null> {
     const product = await prisma.product.findFirst({
       where: { name },
+      include: { images: true },
     });
     if (!product) return null;
     return ProductMapper.toDomainResponse(product);
@@ -52,16 +64,37 @@ export class PrismaProductRepository implements ProductRepository {
           },
         }),
       },
+      include: { images: true },
     });
     return products.map((p) => ProductMapper.toDomain(p));
   }
 
   // Metodo para actualizar un producto
   async update(id: string, productData: Partial<Product>): Promise<Product> {
+    const { images, ...restOfProductData } = productData;
+
     const updatedProduct = await prisma.product.update({
       where: { id },
-      data: productData,
+      data: {
+        ...restOfProductData,
+
+        ...(images && {
+          images: {
+            deleteMany: {},
+            create: images.map((img) => ({
+              url: img.url,
+              isMain: img.isMain,
+              category: "PRODUCT",
+              createdBy: productData.updatedBy || "",
+            })),
+          },
+        }),
+      },
+      include: {
+        images: true,
+      },
     });
+
     return ProductMapper.toDomain(updatedProduct);
   }
 

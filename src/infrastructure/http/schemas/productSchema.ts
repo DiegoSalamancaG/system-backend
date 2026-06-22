@@ -9,15 +9,14 @@ export const createProductSchema = z.object({
     description: z
       .string()
       .max(255, "La descripción no puede pasar los 255 caracteres"),
-    price: z
+    price: z.coerce
       .number({ message: "El precio es obligatorio" })
       .int()
       .positive("El precio debe ser un número positivo"),
-    stock: z
+    stock: z.coerce
       .number()
       .int()
       .nonnegative("El stock no puede ser negativo")
       .optional(),
-    imageUrl: z.string().url("La URL de la imagen no es válida"),
   }),
 });

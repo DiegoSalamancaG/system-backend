@@ -6,6 +6,12 @@ export class HttpResponse {
       data,
     };
   }
+  static error<T>(data: T, message?: string) {
+    return {
+      status: "error",
+      ...(message && { message }),
+    };
+  }
 
   // Para estandarizar respuestas informativas o paginadas
   static paginated<T>(data: T[], total: number, page: number, limit: number) {
