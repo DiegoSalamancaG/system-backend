@@ -24,7 +24,7 @@ export class CreateProductUseCase {
       await this.productRepository.findByName(productName);
     if (existingProduct) {
       throw new BadRequestError(
-        `Ya existe un producto registrado con el nombre: ${name}`,
+        `Ya existe un producto registrado con el nombre: ${productName}`,
       );
     }
 

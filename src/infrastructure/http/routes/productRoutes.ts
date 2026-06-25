@@ -38,8 +38,13 @@ router.patch(
   "/:id",
   requireAuth,
   requireRole(["ADMIN"]),
+  upload.array("images", 4),
   (req: Request, res: Response, next: NextFunction) =>
-    productController.updateProduct(req as AuthenticatedRequest, res, next),
+    productController.updateProduct(
+      req as AuthenticatedRequest & { files: any },
+      res,
+      next,
+    ),
 );
 
 router.delete(

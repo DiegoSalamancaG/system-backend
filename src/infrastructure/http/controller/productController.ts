@@ -127,13 +127,59 @@ export class ProductController {
   ): Promise<void> => {
     try {
       const id = req.params.id as string;
+      let productData = { ...req.body };
+      if (productData.price !== undefined) {
+        productData.price = parseInt(productData.price);
+      }
+
+      if (productData.stock !== undefined) {
+        productData.stock = parseInt(productData.stock);
+      }
+
+      // Rescatamos el producto ACTUAL (con sus imágenes viejas) antes de modificar nada
+      const currentProduct = await this.getProductByIdUseCase.execute(id);
+      const oldImages = currentProduct?.images || [];
+
+      // ¿Vienen archivos nuevos en la request? (Multer suele dejarlos en req.files)
+      if (req.files && (req.files as Express.Multer.File[]).length > 0) {
+        const files = req.files as Express.Multer.File[];
+
+        // Subimos las nuevas imágenes a Cloudinary usando tu servicio
+        const uploadPromises = files.map((file) =>
+          this.imageUploadService.uploadImage(file.buffer, "productos"),
+        );
+        const uploadedUrls = await Promise.all(uploadPromises);
+
+        // Formateamos las nuevas URLs para que coincidan con la estructura que espera tu repositorio
+        productData.images = uploadedUrls.map((url, index) => ({
+          url,
+          isMain: index === 0,
+          updatedBy: req.user?.id || "",
+        }));
+      }
+
+      // Actualizar el producto en la Base de Datos
       const updatedProduct = await this.updateProductUseCase.execute(
         id,
-        req.body,
+        productData,
       );
+
+      // Borramos las fotos viejas de Cloudinary en segundo plano
+      if (productData.images && oldImages.length > 0) {
+        oldImages.forEach((img: any) => {
+          console.log(img.url);
+          this.imageUploadService.deleteImage(img.url).catch((err) => {
+            logger.error(
+              `[CLOUDINARY] Error al borrar imagen antigua (${img.url}): ${err.message}`,
+            );
+          });
+        });
+      }
+
       logger.info(
         `[PRODUCT] Producto Modificado: ${updatedProduct?.name} con ID: ${updatedProduct?.id}`,
       );
+
       const safeUpdate = ProductMapper.toDomainResponse(updatedProduct as any);
       res
         .status(200)
@@ -154,7 +200,7 @@ export class ProductController {
       const id = req.params.id as string;
       await this.deactivateProductUseCase.execute(id);
       logger.info(
-        `[PRODUCT] Producto "${id}" desactivado  Acción realizada por Admin ID: ${req.user!.id}`,
+        `[PRODUCT] Producto "${id}" desactivado. Acción realizada por Admin ID: ${req.user!.id}`,
       );
       res
         .status(200)
