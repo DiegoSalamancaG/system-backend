@@ -1,8 +1,6 @@
 import { Response, NextFunction } from "express";
-import {
-  AuthenticatedRequest,
-  MulterFileInMemory,
-} from "../interfaces/authenticatedRequestInterface";
+import { AuthenticatedRequest } from "../interfaces/authenticatedRequestInterface";
+import { MulterFileInMemory } from "../interfaces/fileRequestInterface";
 
 import { HttpResponse } from "../../shared/utils/httpResponse";
 import { ProductMapper } from "../../database/mappers/productMapper";
@@ -11,15 +9,13 @@ import { logger } from "../../shared/logger";
 // Casos de uso
 import { CreateProductUseCase } from "../../../core/products/application/createProductUsecase";
 import { GetAllProductsUseCase } from "../../../core/products/application/getAllProductsUseCase";
-import { GetProductByIdUseCase } from "../../../core/products/application/getProductByIdUsecase";
+import { GetProductByIdUseCase } from "../../../core/products/application/getProductByIdUseCase";
 import { UpdateProductUseCase } from "../../../core/products/application/udpateProductUseCase";
 import { DeactivateProductUseCase } from "../../../core/products/application/deactivateProductUseCase";
 
 // Servicio para subir imgs
 import { ImageUploadService } from "../../shared/imageUploadService";
-
 export class ProductController {
-  // Inyección de dependecias
   constructor(
     private readonly createProductUseCase: CreateProductUseCase,
     private readonly getAllProductsUseCase: GetAllProductsUseCase,
@@ -29,8 +25,9 @@ export class ProductController {
     private readonly imageUploadService: ImageUploadService,
   ) {}
 
+  // Metodos
   createProduct = async (
-    req: AuthenticatedRequest,
+    req: AuthenticatedRequest & { files: MulterFileInMemory[] },
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
@@ -38,7 +35,7 @@ export class ProductController {
       const validatedBody = req.body;
 
       // Extraemos los archivos de Multer
-      const files = req.files as MulterFileInMemory[];
+      const files = req.files;
       if (!files || files.length === 0) {
         res
           .status(400)

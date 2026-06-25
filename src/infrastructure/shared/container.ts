@@ -5,7 +5,7 @@ import { PrismaUserRepository } from "../database/repositories/prismaUserReposit
 // Servicios
 import { BcryptPasswordService } from "./utils/passwordServices";
 import { JwtTokenServices } from "./utils/jwtServices";
-import { ImageUploadService } from "./imageUploadService";
+import { ImageUploadService } from "../shared/imageUploadService";
 
 // User Use Cases
 import { CreateUserUseCase } from "../../core/users/application/createUserUseCase";
@@ -18,7 +18,7 @@ import { UpdateUserUseCase } from "../../core/users/application/updateUserUseCas
 import { CreateProductUseCase } from "../../core/products/application/createProductUsecase";
 import { DeactivateProductUseCase } from "../../core/products/application/deactivateProductUseCase";
 import { GetAllProductsUseCase } from "../../core/products/application/getAllProductsUseCase";
-import { GetProductByIdUseCase } from "../../core/products/application/getProductByIdUsecase";
+import { GetProductByIdUseCase } from "../../core/products/application/getProductByIdUseCase";
 import { UpdateProductUseCase } from "../../core/products/application/udpateProductUseCase";
 
 // Auth Use Cases
@@ -40,7 +40,7 @@ class DependenciesController {
 
   public readonly passwordService = new BcryptPasswordService();
   public readonly jwtTokenService = new JwtTokenServices();
-  public readonly uploadImageServices = new ImageUploadService();
+  public readonly imageUploadService = new ImageUploadService();
 
   // =====================
   // PRODUCT USE CASES
@@ -116,7 +116,7 @@ class DependenciesController {
     this.getProductByIdUseCase,
     this.updateProductUseCase,
     this.deactivateProductUseCase,
-    this.uploadImageServices,
+    this.imageUploadService,
   );
 
   public readonly userController = new UserController(

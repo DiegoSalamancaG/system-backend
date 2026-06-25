@@ -5,9 +5,10 @@ import { createProductSchema } from "../../http/schemas/productSchema";
 import { requireAuth } from "../middlewares/authMiddlewares";
 import { requireRole } from "../middlewares/roleMiddlewares";
 import { upload } from "../middlewares/uploadMiddleware";
-import { AuthenticatedRequest } from "../interfaces/authenticatedRequestInterface"; // Asegúrate de importar tu interfaz
+import { AuthenticatedRequest } from "../interfaces/authenticatedRequestInterface";
 
 const router = Router();
+
 const productController = container.productController;
 
 // Rutas públicas (Usan Request estándar de Express, no necesitan casteo)
@@ -23,10 +24,14 @@ router.post(
   "/",
   requireAuth,
   requireRole(["ADMIN"]),
-  upload.array("images", 4), // 1º Multer procesa imágenes y llena el body
-  validateRequest(createProductSchema), // 2º Zod valida el body ya procesado
+  upload.array("images", 4), // Multer procesa imágenes y llena el body
+  validateRequest(createProductSchema), // Zod valida el body ya procesado
   (req: Request, res: Response, next: NextFunction) =>
-    productController.createProduct(req as AuthenticatedRequest, res, next), // 🚀 El casteo mágico
+    productController.createProduct(
+      req as AuthenticatedRequest & { files: any },
+      res,
+      next,
+    ),
 );
 
 router.patch(
@@ -34,7 +39,7 @@ router.patch(
   requireAuth,
   requireRole(["ADMIN"]),
   (req: Request, res: Response, next: NextFunction) =>
-    productController.updateProduct(req as AuthenticatedRequest, res, next), // 🚀 El casteo mágico
+    productController.updateProduct(req as AuthenticatedRequest, res, next),
 );
 
 router.delete(
@@ -42,7 +47,7 @@ router.delete(
   requireAuth,
   requireRole(["ADMIN"]),
   (req: Request, res: Response, next: NextFunction) =>
-    productController.deactivateProduct(req as AuthenticatedRequest, res, next), // 🚀 El casteo mágico
+    productController.deactivateProduct(req as AuthenticatedRequest, res, next),
 );
 
 export { router as productRouter };
