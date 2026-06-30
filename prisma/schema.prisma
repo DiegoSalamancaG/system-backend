@@ -66,6 +66,7 @@ model LandingSection {
   key         String      @unique
   title       String
   content     String      @db.Text
+  images      LandingImage[]
 
   createdAt   DateTime    @default(now()) @map("created_at") @db.Timestamptz(6)
   updatedAt   DateTime    @updatedAt @map("updated_at") @db.Timestamptz(6)
@@ -73,6 +74,19 @@ model LandingSection {
   updatedBy   String?     @map("updated_by")
 
   @@map("landing_sections")
+}
+
+model LandingImage {
+  id               String         @id @default(uuid())
+  url              String
+  altText          String?        @map("alt_text")
+  category         GalleryCategory
+  landingSectionId String         @map("landing_section_id")
+  landingSection   LandingSection @relation(fields: [landingSectionId], references: [id], onDelete: Cascade)
+
+  createdAt        DateTime       @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@map("landing_images")
 }
 
 enum UserRole {
@@ -94,6 +108,8 @@ enum GalleryCategory {
   PRODUCT
   PORTFOLIO
   AVAILABLE_DESIGN
+  BANNER
+  LANDING
 
   @@map("gallery_category")
 }

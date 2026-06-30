@@ -46,9 +46,7 @@ export class ImageUploadService {
 
       const [publicIdWithoutExtension] = fileNameWithExtension.split(".");
 
-      // 🔍 DEBUG 1: Revisa qué carpetas hay antes del archivo
-      // Si tus URLs guardan carpeta, usualmente están justo antes del archivo en la URL.
-      // Vamos a asumir un extractor más robusto por si usas carpetas:
+      // Revisa qué carpetas hay antes del archivo
       const uploadIndex = urlParts.indexOf("upload");
       let publicId = publicIdWithoutExtension;
 
@@ -61,7 +59,7 @@ export class ImageUploadService {
       }
       console.log(`[CLOUDINARY] Intentando borrar el public_id: "${publicId}"`);
 
-      // 2. Llamada a la API
+      // Llamada a la API
       const result = await cloudinary.uploader.destroy(publicId);
 
       console.log(`[CLOUDINARY] Respuesta del servidor:`, result);

@@ -3,7 +3,7 @@ import { rateLimit } from "express-rate-limit";
 
 export const corsMiddleware = cors({
   origin: process.env.ALLOWED_ORIGINS?.split(",") || "*", // Permitir todas las fuentes (ajusta según tus necesidades)
-  methods: ["GET", "POST", "PUT", "DELETE"], // Métodos permitidos
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE"], // Métodos permitidos
   allowedHeaders: ["Content-Type", "Authorization"], // Encabezados permitidos
 });
 

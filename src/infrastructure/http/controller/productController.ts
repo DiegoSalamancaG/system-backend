@@ -12,6 +12,7 @@ import { GetAllProductsUseCase } from "../../../core/products/application/getAll
 import { GetProductByIdUseCase } from "../../../core/products/application/getProductByIdUseCase";
 import { UpdateProductUseCase } from "../../../core/products/application/udpateProductUseCase";
 import { DeactivateProductUseCase } from "../../../core/products/application/deactivateProductUseCase";
+import { BadRequestError } from "../../../core/shared/Errors/typeErrors";
 
 // Servicio para subir imgs
 import { ImageUploadService } from "../../shared/imageUploadService";
@@ -31,6 +32,7 @@ export class ProductController {
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
+    let uploadedImageUrls: string[] = [];
     try {
       const validatedBody = req.body;
 
@@ -48,13 +50,18 @@ export class ProductController {
       }
 
       // Subida en paralelo a Cloudinary
-      const uploadPromises = files.map((file) =>
-        this.imageUploadService.uploadImage(file.buffer, "productos"),
-      );
-      const imageUrls = await Promise.all(uploadPromises);
+      const uploadPromises = files.map(async (file) => {
+        const url = await this.imageUploadService.uploadImage(
+          file.buffer,
+          "productos",
+        );
+        uploadedImageUrls.push(url);
+        return url;
+      });
+      uploadedImageUrls = await Promise.all(uploadPromises);
 
       // Formateamos el array para el Dominio
-      const imagesData = imageUrls.map((url, index) => ({
+      const imagesData = uploadedImageUrls.map((url, index) => ({
         url,
         isMain: index === 0,
       }));
@@ -64,7 +71,8 @@ export class ProductController {
         name: validatedBody.name,
         description: validatedBody.description,
         price: Number(validatedBody.price),
-        stock: Number(validatedBody.stock),
+        stock:
+          validatedBody.stock !== undefined ? Number(validatedBody.stock) : 1,
         images: imagesData,
         createdBy: req.user!.id,
       });
@@ -76,6 +84,7 @@ export class ProductController {
         .status(201)
         .json(HttpResponse.success(safeProduct, "Producto creado con éxito"));
     } catch (error) {
+      await this.deleteUploadedImages(uploadedImageUrls);
       next(error);
     }
   };
@@ -125,15 +134,22 @@ export class ProductController {
     res: Response,
     next: NextFunction,
   ): Promise<void> => {
+    let uploadedImageUrls: string[] = [];
     try {
       const id = req.params.id as string;
       let productData = { ...req.body };
       if (productData.price !== undefined) {
-        productData.price = parseInt(productData.price);
+        productData.price = Number(productData.price);
+        if (Number.isNaN(productData.price)) {
+          throw new BadRequestError("El precio debe ser un número válido");
+        }
       }
 
       if (productData.stock !== undefined) {
-        productData.stock = parseInt(productData.stock);
+        productData.stock = Number(productData.stock);
+        if (Number.isNaN(productData.stock)) {
+          throw new BadRequestError("El stock debe ser un número válido");
+        }
       }
 
       // Rescatamos el producto ACTUAL (con sus imágenes viejas) antes de modificar nada
@@ -145,13 +161,18 @@ export class ProductController {
         const files = req.files as Express.Multer.File[];
 
         // Subimos las nuevas imágenes a Cloudinary usando tu servicio
-        const uploadPromises = files.map((file) =>
-          this.imageUploadService.uploadImage(file.buffer, "productos"),
-        );
-        const uploadedUrls = await Promise.all(uploadPromises);
+        const uploadPromises = files.map(async (file) => {
+          const url = await this.imageUploadService.uploadImage(
+            file.buffer,
+            "productos",
+          );
+          uploadedImageUrls.push(url);
+          return url;
+        });
+        uploadedImageUrls = await Promise.all(uploadPromises);
 
         // Formateamos las nuevas URLs para que coincidan con la estructura que espera tu repositorio
-        productData.images = uploadedUrls.map((url, index) => ({
+        productData.images = uploadedImageUrls.map((url, index) => ({
           url,
           isMain: index === 0,
           updatedBy: req.user?.id || "",
@@ -167,7 +188,6 @@ export class ProductController {
       // Borramos las fotos viejas de Cloudinary en segundo plano
       if (productData.images && oldImages.length > 0) {
         oldImages.forEach((img: any) => {
-          console.log(img.url);
           this.imageUploadService.deleteImage(img.url).catch((err) => {
             logger.error(
               `[CLOUDINARY] Error al borrar imagen antigua (${img.url}): ${err.message}`,
@@ -187,6 +207,7 @@ export class ProductController {
           HttpResponse.success(safeUpdate, "Producto actualizado con éxito"),
         );
     } catch (error) {
+      await this.deleteUploadedImages(uploadedImageUrls);
       next(error);
     }
   };
@@ -209,4 +230,16 @@ export class ProductController {
       next(error);
     }
   };
+
+  private async deleteUploadedImages(imageUrls: string[]): Promise<void> {
+    await Promise.all(
+      imageUrls.map((url) =>
+        this.imageUploadService.deleteImage(url).catch((err) => {
+          logger.error(
+            `[CLOUDINARY] Error al limpiar imagen subida (${url}): ${err.message}`,
+          );
+        }),
+      ),
+    );
+  }
 }

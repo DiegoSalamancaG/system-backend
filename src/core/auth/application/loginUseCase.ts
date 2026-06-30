@@ -21,6 +21,10 @@ export class LoginUseCase {
       throw new UnauthorizedError("Credenciales invalidas");
     }
 
+    if (user.status !== "ACTIVE") {
+      throw new UnauthorizedError("Usuario inactivo o bloqueado");
+    }
+
     const isPasswordValid = await this.passwordService.comparePassword(
       password,
       user.password,

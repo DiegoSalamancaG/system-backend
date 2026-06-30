@@ -35,8 +35,8 @@ export class PrismaProductRepository implements ProductRepository {
 
   // Metodo para buscar por ID
   async findById(id: string): Promise<Product | null> {
-    const product = await prisma.product.findUnique({
-      where: { id },
+    const product = await prisma.product.findFirst({
+      where: { id, isActive: true },
       include: { images: true },
     });
     if (!product) return null;
@@ -57,6 +57,7 @@ export class PrismaProductRepository implements ProductRepository {
   async findAll(search?: string): Promise<Product[]> {
     const products = await prisma.product.findMany({
       where: {
+        isActive: true,
         ...(search && {
           name: {
             contains: search,

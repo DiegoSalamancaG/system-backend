@@ -17,13 +17,13 @@ export class AuthController {
     next: NextFunction,
   ): Promise<void> => {
     try {
-      const { fullname, email, password, role } = req.body;
+      const { fullname, email, password } = req.body;
 
       const newUser = await this.registerUseCase.execute({
         fullname,
         email,
         password,
-        role,
+        role: "CLIENT",
         status: "ACTIVE",
       });
       logger.info(

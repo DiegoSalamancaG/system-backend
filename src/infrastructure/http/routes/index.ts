@@ -4,6 +4,7 @@ import { Router } from "express";
 import { productRouter } from "./productRoutes";
 import { userRouter } from "./userRoutes";
 import { authRouter } from "./authRoutes";
+import { landingRouter } from "./landingSectionRoutes";
 
 // Middlewares
 import { requireAuth } from "../../http/middlewares/authMiddlewares";
@@ -14,5 +15,11 @@ const rootRouter = Router();
 rootRouter.use("/products", productRouter);
 rootRouter.use("/users", requireAuth, requireRole(["ADMIN"]), userRouter);
 rootRouter.use("/auth", authRouter);
+rootRouter.use(
+  "/landingSections",
+  requireAuth,
+  requireRole(["ADMIN"]),
+  landingRouter,
+);
 
 export { rootRouter };

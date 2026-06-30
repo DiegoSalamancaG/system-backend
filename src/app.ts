@@ -1,6 +1,6 @@
 import express from "express";
 import morgan from "morgan";
-import dotenv from "dotenv";
+import "dotenv/config";
 import {
   limiter,
   corsMiddleware,
@@ -9,8 +9,6 @@ import { rootRouter } from "./infrastructure/http/routes/index";
 import { errorMiddleware } from "./infrastructure/http/middlewares/errorMiddlewares";
 import { logger } from "./infrastructure/shared/logger";
 import { connectDB } from "./context/prisma";
-
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
