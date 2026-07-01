@@ -6,7 +6,7 @@ export class HttpResponse {
       data,
     };
   }
-  static error<T>(data: T, message?: string) {
+  static error<T>(message?: string) {
     return {
       status: "error",
       ...(message && { message }),

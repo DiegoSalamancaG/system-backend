@@ -7,6 +7,7 @@ import { PrismaLandingSectionRepository } from "../database/repositories/prismaL
 import { BcryptPasswordService } from "./utils/passwordServices";
 import { JwtTokenServices } from "./utils/jwtServices";
 import { ImageUploadService } from "../shared/imageUploadService";
+import { ResendEmailService } from "./resendEmailServices";
 
 // User Use Cases
 import { CreateUserUseCase } from "../../core/users/application/createUserUseCase";
@@ -25,6 +26,8 @@ import { UpdateProductUseCase } from "../../core/products/application/udpateProd
 // Auth Use Cases
 import { LoginUseCase } from "../../core/auth/application/loginUseCase";
 import { RegisterUserUseCase } from "../../core/auth/application/registerUserUseCase";
+import { ForgotPasswordUseCase } from "../../core/auth/application/forgotPasswordUseCase";
+import { ResetPasswordUseCase } from "../../core/auth/application/resetpasswordTokenUseCase";
 
 // LandingSection USe Cases
 import { CreateLandingSectionUseCase } from "../../core/landingSection/application/createLandingSectionUseCase";
@@ -50,6 +53,7 @@ class DependenciesController {
   public readonly passwordService = new BcryptPasswordService();
   public readonly jwtTokenService = new JwtTokenServices();
   public readonly imageUploadService = new ImageUploadService();
+  public readonly resendEmailService = new ResendEmailService();
 
   // =====================
   // PRODUCT USE CASES
@@ -111,6 +115,17 @@ class DependenciesController {
   public readonly registerUserUseCase = new RegisterUserUseCase(
     this.userRepository,
     this.passwordService,
+    this.resendEmailService,
+  );
+
+  public readonly forgotPasswordUSeCase = new ForgotPasswordUseCase(
+    this.userRepository,
+    this.resendEmailService,
+  );
+
+  public readonly resetPasswordUseCase = new ResetPasswordUseCase(
+    this.userRepository,
+    this.passwordService,
   );
 
   // =====================
@@ -154,6 +169,8 @@ class DependenciesController {
   public readonly authController = new AuthController(
     this.registerUserUseCase,
     this.loginUseCase,
+    this.forgotPasswordUSeCase,
+    this.resetPasswordUseCase,
   );
 
   public readonly landingSectionController = new LandingSectionController(

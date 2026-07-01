@@ -79,4 +79,54 @@ export class PrismaUserRepository implements UserRepository {
       data: { status: "INACTIVE" },
     });
   }
+
+  // Métodos password Recovery
+  async saveResetToken(
+    userId: string,
+    token: string,
+    expiresAt: Date,
+  ): Promise<void> {
+    //limpiar los tokens viejos antes de crear el nuevo
+    await prisma.passwordResetToken.deleteMany({
+      where: { userId },
+    });
+
+    await prisma.passwordResetToken.create({
+      data: {
+        token,
+        expiresAt,
+        userId,
+      },
+    });
+  }
+
+  async findResetToken(
+    token: string,
+  ): Promise<{ userId: string; expiresAt: Date } | null> {
+    const tokenData = await prisma.passwordResetToken.findUnique({
+      where: { token },
+      select: {
+        userId: true,
+        expiresAt: true,
+      },
+    });
+
+    return tokenData;
+  }
+
+  async deleteResetToken(token: string): Promise<void> {
+    // si el token ya fue borrado previamente por otra consulta concurrente.
+    await prisma.passwordResetToken.deleteMany({
+      where: { token },
+    });
+  }
+
+  async updatePassword(userId: string, passwordHash: string): Promise<void> {
+    await prisma.user.update({
+      where: { id: userId },
+      data: {
+        password: passwordHash,
+      },
+    });
+  }
 }

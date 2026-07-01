@@ -20,6 +20,7 @@ model User {
   createdBy  String?      @map("created_by")
   updatedBy  String?      @map("updated_by")
 
+  resetTokens PasswordResetToken[]
   @@index([role])
   @@map("users")
 }
@@ -88,6 +89,19 @@ model LandingImage {
 
   @@map("landing_images")
 }
+
+model PasswordResetToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("password_reset_tokens")
+}
+
 
 enum UserRole {
   CLIENT

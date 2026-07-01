@@ -20,4 +20,12 @@ export interface UserRepository {
   update(id: string, userData: Partial<User>): Promise<User | null>;
   findAll(filters: UserFilters): Promise<User[]>;
   deactivate(id: string): Promise<void | null>;
+
+  // Métodos para el cambio de contraseña
+  saveResetToken(userId: string, token: string, expiresAt: Date): Promise<void>;
+  findResetToken(
+    token: string,
+  ): Promise<{ userId: string; expiresAt: Date } | null>;
+  deleteResetToken(token: string): Promise<void>;
+  updatePassword(userId: string, passwordHash: string): Promise<void>;
 }
